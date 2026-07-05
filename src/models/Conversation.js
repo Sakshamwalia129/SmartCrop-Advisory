@@ -12,7 +12,6 @@ const responseSchema = new mongoose.Schema(
     possibleCause: { type: String, default: '' },
     immediateAction: { type: String, default: '' },
     organicTreatment: { type: String, default: '' },
-    whenToContactOfficer: { type: String, default: '' },
     disclaimer: { type: String, default: '' },
   },
   { _id: false }
@@ -25,6 +24,12 @@ const conversationSchema = new mongoose.Schema(
       required: true,
       trim: true,
       maxlength: 500,
+    },
+    title: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 60,
     },
     cropType: {
       type: String,
@@ -40,9 +45,14 @@ const conversationSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    language: {
+      type: String,
+      enum: ['en', 'hi'],
+      default: 'en',
+    },
   },
   {
-    timestamps: { createdAt: true, updatedAt: false },
+    timestamps: true,
     collection: 'conversations',
   }
 );

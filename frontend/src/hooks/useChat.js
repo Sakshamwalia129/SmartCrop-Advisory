@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { sendChatMessage, fetchHistory } from '../api/chatApi.js';
+import { sendChatMessage, fetchHistory, renameConversationApi, deleteConversationApi } from '../api/chatApi.js';
 
 const makeId = () => Math.random().toString(36).slice(2, 10);
 
@@ -9,6 +9,8 @@ export function useChat() {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [serverOnline, setServerOnline] = useState(true);
+  // ID of the conversation currently displayed in the chat pane (null = new chat)
+  const [activeConversationId, setActiveConversationId] = useState(null);
 
   // Ref so callbacks always see the latest isLoading without needing it as a dep
   const isLoadingRef = useRef(false);
@@ -33,7 +35,7 @@ export function useChat() {
   }, []);
 
   // ── sendMessage ────────────────────────────────────────────────────────────
-  const sendMessage = useCallback(async (query, cropType) => {
+  const sendMessage = useCallback(async (query, cropType, language = 'en') => {
     const trimmed = query.trim();
     if (!trimmed || isLoadingRef.current) return;
 
@@ -44,9 +46,10 @@ export function useChat() {
     addMessage({ type: 'user', content: trimmed, cropType: cropType || null });
 
     try {
-      const res = await sendChatMessage(trimmed, cropType || null);
+      const res = await sendChatMessage(trimmed, cropType || null, language);
 
       if (res.success && res.data) {
+        setActiveConversationId(res.data.conversationId || null);
         addMessage({
           type: 'ai',
           // res.data contains: conversationId + all advisory fields flat
@@ -90,6 +93,7 @@ export function useChat() {
   // History API returns: { query, cropType, response: { riskLevel, ... }, isWithinDomain, createdAt }
   // AdvisoryCard expects the response object directly as `content`
   const loadHistoryItem = useCallback((item) => {
+    setActiveConversationId(item._id || null);
     setMessages([
       {
         id: makeId(),
@@ -111,6 +115,43 @@ export function useChat() {
   // ── clearChat ──────────────────────────────────────────────────────────────
   const clearChat = useCallback(() => {
     setMessages([]);
+    setActiveConversationId(null);
+  }, []);
+
+  // ── renameConversation ─────────────────────────────────────────────────────
+  /**
+   * Renames a conversation in MongoDB and updates the local history state
+   * immediately (no full reload needed).
+   * Returns the new title on success, throws on failure.
+   */
+  const renameConversation = useCallback(async (id, newTitle) => {
+    const res = await renameConversationApi(id, newTitle);
+    if (res.success && res.data?.title) {
+      // Optimistic update: patch just the title in local state
+      setHistory((prev) =>
+        prev.map((item) => (item._id === id ? { ...item, title: res.data.title } : item))
+      );
+      return res.data.title;
+    }
+    throw new Error('Rename failed');
+  }, []);
+
+  // ── deleteConversation ─────────────────────────────────────────────────────
+  /**
+   * Deletes a conversation from MongoDB, removes it from local history,
+   * and clears the chat pane if that conversation is currently open.
+   */
+  const deleteConversation = useCallback(async (id) => {
+    await deleteConversationApi(id);
+    setHistory((prev) => prev.filter((item) => item._id !== id));
+    // If the deleted conversation is currently displayed, start a new chat
+    setActiveConversationId((current) => {
+      if (current === id) {
+        setMessages([]);
+        return null;
+      }
+      return current;
+    });
   }, []);
 
   return {
@@ -119,9 +160,12 @@ export function useChat() {
     history,
     historyLoading,
     serverOnline,
+    activeConversationId,
     sendMessage,
     loadHistory,
     loadHistoryItem,
     clearChat,
+    renameConversation,
+    deleteConversation,
   };
 }

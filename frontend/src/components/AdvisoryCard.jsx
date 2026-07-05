@@ -1,19 +1,19 @@
 import React from 'react';
+import { getLabels } from '../i18n/labels.js';
 
-// Risk level visual config
+// Risk level visual config (colours/dots only — text is resolved via i18n labels)
 const RISK_CONFIG = {
-  Low: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', dot: 'bg-green-500', label: 'Low Risk' },
-  Medium: { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200', dot: 'bg-amber-500', label: 'Medium Risk' },
-  High: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200', dot: 'bg-red-500', label: 'High Risk' },
-  Unknown: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200', dot: 'bg-gray-400', label: 'Unknown Risk' },
-  'N/A': { bg: 'bg-gray-100', text: 'text-gray-500', border: 'border-gray-200', dot: 'bg-gray-300', label: 'N/A' },
+  Low:     { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', dot: 'bg-green-500' },
+  Medium:  { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200', dot: 'bg-amber-500' },
+  High:    { bg: 'bg-red-100',   text: 'text-red-800',   border: 'border-red-200',   dot: 'bg-red-500'   },
+  Unknown: { bg: 'bg-gray-100',  text: 'text-gray-600',  border: 'border-gray-200',  dot: 'bg-gray-400'  },
+  'N/A':   { bg: 'bg-gray-100',  text: 'text-gray-500',  border: 'border-gray-200',  dot: 'bg-gray-300'  },
 };
 
-// Ordered advisory sections
+// Ordered advisory sections — labels are resolved at render time via getLabels()
 const SECTIONS = [
   {
     key: 'possibleCause',
-    label: 'Possible Cause',
     color: 'text-violet-600',
     bg: 'bg-violet-50',
     border: 'border-violet-100',
@@ -26,7 +26,6 @@ const SECTIONS = [
   },
   {
     key: 'immediateAction',
-    label: 'Immediate Action',
     color: 'text-orange-600',
     bg: 'bg-orange-50',
     border: 'border-orange-100',
@@ -38,7 +37,6 @@ const SECTIONS = [
   },
   {
     key: 'organicTreatment',
-    label: 'Organic Treatment',
     color: 'text-green-700',
     bg: 'bg-green-50',
     border: 'border-green-100',
@@ -46,19 +44,6 @@ const SECTIONS = [
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-      </svg>
-    ),
-  },
-  {
-    key: 'whenToContactOfficer',
-    label: 'When to Contact Officer',
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
-    border: 'border-blue-100',
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
       </svg>
     ),
   },
@@ -82,9 +67,10 @@ function isEmpty(value) {
  *  2. GET /api/chat/history → item.response (nested advisory object, no conversationId)
  *
  * Both shapes contain riskLevel, possibleCause, immediateAction, organicTreatment,
- * whenToContactOfficer, disclaimer — so the same component works for both.
+ * disclaimer — so the same component works for both.
  */
-export default function AdvisoryCard({ data }) {
+export default function AdvisoryCard({ data, language = 'en' }) {
+  const labels = getLabels(language);
   if (!data) return null;
 
   const riskLevel = data.riskLevel || 'Unknown';
@@ -100,7 +86,7 @@ export default function AdvisoryCard({ data }) {
       {showRiskBadge && (
         <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${risk.bg} ${risk.border}`}>
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${risk.dot}`} />
-          <span className={`text-sm font-semibold ${risk.text}`}>{risk.label}</span>
+          <span className={`text-sm font-semibold ${risk.text}`}>{labels.riskLabels?.[riskLevel] ?? riskLevel}</span>
         </div>
       )}
 
@@ -113,11 +99,11 @@ export default function AdvisoryCard({ data }) {
 
       {/* Advisory section cards */}
       <div className="grid gap-2.5">
-        {visibleSections.map(({ key, label, icon, color, bg, border }) => (
+        {visibleSections.map(({ key, icon, color, bg, border }) => (
           <div key={key} className={`rounded-xl border ${border} ${bg} p-3.5`}>
             <div className={`flex items-center gap-2 mb-1.5 ${color}`}>
               {icon}
-              <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
+              <span className="text-xs font-semibold uppercase tracking-wide">{labels[key]}</span>
             </div>
             <p className="text-sm text-gray-700 leading-relaxed">{data[key]}</p>
           </div>

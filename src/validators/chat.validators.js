@@ -10,6 +10,7 @@ const chatBodySchema = Joi.object({
     'any.required': 'query is required',
   }),
   cropType: Joi.string().trim().max(100).optional().allow('', null),
+  language: Joi.string().valid('en', 'hi').default('en').optional(),
 });
 
 const historyQuerySchema = Joi.object({

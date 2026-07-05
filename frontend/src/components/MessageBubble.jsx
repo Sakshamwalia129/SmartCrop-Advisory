@@ -48,7 +48,7 @@ function UserBubble({ content, cropType, timestamp }) {
 }
 
 // ── AI message ────────────────────────────────────────────────────────────────
-function AIBubble({ content, isWithinDomain, timestamp }) {
+function AIBubble({ content, isWithinDomain, timestamp, language }) {
   // Only treat as refusal when backend explicitly sets isWithinDomain: false
   const isRefusal = isWithinDomain === false;
 
@@ -72,7 +72,7 @@ function AIBubble({ content, isWithinDomain, timestamp }) {
               <p className="text-sm text-gray-700 leading-relaxed">{content?.immediateAction}</p>
             </div>
           ) : (
-            <AdvisoryCard data={content} />
+            <AdvisoryCard data={content} language={language} />
           )}
         </div>
       </div>
@@ -103,9 +103,9 @@ function ErrorBubble({ content, timestamp }) {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
-export default function MessageBubble({ message }) {
+export default function MessageBubble({ message, language }) {
   if (message.type === 'user') return <UserBubble {...message} />;
-  if (message.type === 'ai') return <AIBubble {...message} />;
+  if (message.type === 'ai') return <AIBubble {...message} language={language} />;
   if (message.type === 'error') return <ErrorBubble {...message} />;
   return null;
 }

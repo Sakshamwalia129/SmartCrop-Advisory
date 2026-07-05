@@ -6,6 +6,8 @@ export default function QueryInput({
   onChange,
   cropType,
   onCropChange,
+  language,
+  onLanguageChange,
   onSend,
   isLoading,
 }) {
@@ -30,9 +32,39 @@ export default function QueryInput({
 
   return (
     <div className="flex-shrink-0 border-t border-green-100 bg-white px-4 py-3">
-      {/* Crop selector row */}
+      {/* Crop selector row — now includes language toggle */}
       <div className="flex items-center gap-2 mb-2.5">
         <CropSelector value={cropType} onChange={onCropChange} />
+
+        {/* Language toggle */}
+        <div className="flex items-center rounded-lg border border-forest-200 overflow-hidden ml-1 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => onLanguageChange('en')}
+            aria-label="Switch to English"
+            className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+              language === 'en'
+                ? 'bg-forest-700 text-white'
+                : 'bg-forest-50 text-forest-700 hover:bg-forest-100'
+            }`}
+          >
+            EN
+          </button>
+          <div className="w-px h-4 bg-forest-200 flex-shrink-0" />
+          <button
+            type="button"
+            onClick={() => onLanguageChange('hi')}
+            aria-label="Switch to Hindi"
+            className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+              language === 'hi'
+                ? 'bg-forest-700 text-white'
+                : 'bg-forest-50 text-forest-700 hover:bg-forest-100'
+            }`}
+          >
+            हिं
+          </button>
+        </div>
+
         <span className="text-xs text-gray-400 hidden sm:block">
           Shift+Enter for new line · Enter to send
         </span>

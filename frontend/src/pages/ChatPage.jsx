@@ -5,6 +5,7 @@ import DisclaimerBanner from '../components/DisclaimerBanner.jsx';
 import ChatWindow from '../components/ChatWindow.jsx';
 import QueryInput from '../components/QueryInput.jsx';
 import HistorySidebar from '../components/HistorySidebar.jsx';
+import { useToast, ToastContainer } from '../components/Toast.jsx';
 
 export default function ChatPage() {
   const {
@@ -17,29 +18,54 @@ export default function ChatPage() {
     loadHistory,
     loadHistoryItem,
     clearChat,
+    renameConversation,
+    deleteConversation,
   } = useChat();
+
+  const { toasts, showToast, dismiss } = useToast();
 
   const [query, setQuery] = useState('');
   const [cropType, setCropType] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [language, setLanguage] = useState('en');
 
   const handleSend = useCallback(() => {
     if (!query.trim() || isLoading) return;
-    sendMessage(query, cropType);
+    sendMessage(query, cropType, language);
     setQuery('');
-  }, [query, cropType, isLoading, sendMessage]);
+  }, [query, cropType, language, isLoading, sendMessage]);
 
   // Called when user clicks an example in empty state — sends immediately
   const handleSelectExample = useCallback((exampleText, exampleCrop) => {
     if (exampleCrop) setCropType(exampleCrop);
-    sendMessage(exampleText, exampleCrop || cropType);
-  }, [sendMessage, cropType]);
+    sendMessage(exampleText, exampleCrop || cropType, language);
+  }, [sendMessage, cropType, language]);
 
   // Called when user clicks a history item in the sidebar
   const handleSelectHistoryItem = useCallback((item) => {
     loadHistoryItem(item);
     setSidebarOpen(false);
   }, [loadHistoryItem]);
+
+  // ── Rename handler ─────────────────────────────────────────────────────────
+  const handleRename = useCallback(async (id, newTitle) => {
+    try {
+      await renameConversation(id, newTitle);
+      showToast('Conversation renamed successfully.', 'success');
+    } catch {
+      showToast('Failed to rename conversation.', 'error');
+    }
+  }, [renameConversation, showToast]);
+
+  // ── Delete handler ─────────────────────────────────────────────────────────
+  const handleDelete = useCallback(async (id) => {
+    try {
+      await deleteConversation(id);
+      showToast('Conversation deleted successfully.', 'success');
+    } catch {
+      showToast('Failed to delete conversation.', 'error');
+    }
+  }, [deleteConversation, showToast]);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -51,6 +77,8 @@ export default function ChatPage() {
         onSelectItem={handleSelectHistoryItem}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onRename={handleRename}
+        onDelete={handleDelete}
       />
 
       {/* ── Main Area ── */}
@@ -58,6 +86,7 @@ export default function ChatPage() {
         {/* Header */}
         <Header
           onToggleSidebar={() => setSidebarOpen((v) => !v)}
+          sidebarOpen={sidebarOpen}
           serverOnline={serverOnline}
           onClearChat={clearChat}
         />
@@ -70,6 +99,7 @@ export default function ChatPage() {
           messages={messages}
           isLoading={isLoading}
           onSelectExample={handleSelectExample}
+          language={language}
         />
 
         {/* Input area */}
@@ -78,10 +108,15 @@ export default function ChatPage() {
           onChange={setQuery}
           cropType={cropType}
           onCropChange={setCropType}
+          language={language}
+          onLanguageChange={setLanguage}
           onSend={handleSend}
           isLoading={isLoading}
         />
       </div>
+
+      {/* ── Toast notifications ── */}
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }

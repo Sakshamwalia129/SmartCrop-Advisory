@@ -193,13 +193,20 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 
 ## Screenshots
 
-> _Screenshots to be added after UI finalization._
+### Advisory Card — Risk Triage & Organic Treatment Plan
+![Advisory card showing Medium Risk triage with possible cause, immediate action, and organic treatment sections](Assets/screenshot-advisory.png)
 
-| View | Preview |
-|---|---|
-| Chat interface | `[screenshot-chat.png]` |
-| Advisory card | `[screenshot-advisory.png]` |
-| History sidebar | `[screenshot-history.png]` |
+### Conversation History Sidebar
+![History sidebar listing 7 past conversations tagged by crop type (Potato, Tomato, Beans, Wheat)](Assets/screenshot-history.png)
+
+### Query Input Bar & Crop Selector
+![Query input bar with crop dropdown, language toggle, and success toast for conversation rename](Assets/screenshot-input.png)
+
+### Delete Conversation Confirmation Dialog
+![Modal dialog asking the user to confirm deletion of a conversation, with Cancel and Delete buttons](Assets/screenshot-delete.png)
+
+### Data Model — Conversation & Message Schema
+![UML-style diagram showing the Conversation document embedding an array of Message sub-documents, with all field names and types](Assets/Schema Diagram.png)
 
 ---
 

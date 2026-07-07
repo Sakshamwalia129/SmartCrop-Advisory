@@ -206,7 +206,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ![Modal dialog asking the user to confirm deletion of a conversation, with Cancel and Delete buttons](Assets/screenshot-delete.png)
 
 ### Data Model — Conversation & Message Schema
-![UML-style diagram showing the Conversation document embedding an array of Message sub-documents, with all field names and types](Assets/Schema Diagram.png)
+![UML-style diagram showing the Conversation document embedding an array of Message sub-documents, with all field names and types](Assets/Schema-Diagram.png)
 
 ---
 

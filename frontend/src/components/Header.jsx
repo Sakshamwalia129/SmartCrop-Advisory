@@ -1,6 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-export default function Header({ onToggleSidebar, sidebarOpen, serverOnline, onClearChat }) {
+/** Returns up to 2 uppercase initials from a name string */
+function getInitials(name = '') {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
+}
+
+export default function Header({ onToggleSidebar, sidebarOpen, serverOnline, onClearChat, user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -46,7 +56,7 @@ export default function Header({ onToggleSidebar, sidebarOpen, serverOnline, onC
         </div>
       </div>
 
-      {/* Right — server status + 3-dot overflow menu */}
+      {/* Right — server status + user info + avatar + 3-dot overflow menu */}
       <div className="flex items-center gap-2">
         {/* Server status pill */}
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest-50 border border-forest-100">
@@ -59,6 +69,9 @@ export default function Header({ onToggleSidebar, sidebarOpen, serverOnline, onC
             {serverOnline ? 'Online' : 'Offline'}
           </span>
         </div>
+
+        {/* User name + email + clickable avatar with profile card */}
+        {user && <UserProfile user={user} />}
 
         {/* 3-dot overflow menu */}
         <div className="relative" ref={menuRef}>
@@ -89,10 +102,97 @@ export default function Header({ onToggleSidebar, sidebarOpen, serverOnline, onC
                 </svg>
                 Clear Chat
               </button>
+
+              {/* Logout — only shown when logged in */}
+              {user && onLogout && (
+                <>
+                  <div className="my-1 border-t border-gray-100" />
+                  <button
+                    id="btn-logout"
+                    onClick={() => { onLogout(); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    {/* Logout icon */}
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Log Out
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
       </div>
     </header>
+  );
+}
+
+// ── UserProfile: avatar button + name/email text + profile card dropdown ──────
+
+function UserProfile({ user }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  // Close profile card when clicking outside
+  useEffect(() => {
+    if (!profileOpen) return;
+    function handleClick(e) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [profileOpen]);
+
+  const initials = getInitials(user.name || user.email);
+
+  return (
+    <div className="relative flex items-center" ref={profileRef}>
+      {/* Clickable avatar */}
+      <button
+        id="btn-user-avatar"
+        onClick={() => setProfileOpen((v) => !v)}
+        aria-label="View profile"
+        aria-expanded={profileOpen}
+        className="w-8 h-8 rounded-full bg-gradient-to-br from-forest-500 to-forest-700 flex items-center justify-center text-white text-xs font-bold select-none shadow-sm flex-shrink-0 hover:ring-2 hover:ring-forest-300 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-forest-400"
+      >
+        {initials}
+      </button>
+
+      {/* Profile card dropdown */}
+      {profileOpen && (
+        <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden">
+          {/* Card header */}
+          <div className="bg-gradient-to-br from-forest-600 to-forest-800 px-4 py-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white text-sm font-semibold truncate leading-tight">
+                {user.name || '—'}
+              </p>
+              <p className="text-forest-200 text-[11px] truncate leading-tight mt-0.5">
+                {user.email}
+              </p>
+            </div>
+          </div>
+
+          {/* Card body */}
+          <div className="px-4 py-3 flex flex-col gap-2">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Full Name</p>
+              <p className="text-sm text-gray-800 font-medium truncate">{user.name || '—'}</p>
+            </div>
+            <div className="border-t border-gray-100 pt-2">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Email Address</p>
+              <p className="text-sm text-gray-800 font-medium truncate">{user.email}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

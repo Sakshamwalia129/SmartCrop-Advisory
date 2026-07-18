@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { sendChatMessage, fetchHistory, renameConversationApi, deleteConversationApi } from '../api/chatApi.js';
 
 const makeId = () => Math.random().toString(36).slice(2, 10);
 
-export function useChat() {
+export function useChat(isAuthenticated = false) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [history, setHistory] = useState([]);
@@ -19,8 +19,29 @@ export function useChat() {
     setMessages((prev) => [...prev, { id: makeId(), timestamp: new Date(), ...msg }]),
   []);
 
+  // ── Auto-load history when user authenticates; clear on logout ──────────────
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadHistory();
+    } else {
+      // User logged out — clear everything
+      setMessages([]);
+      setHistory([]);
+      setActiveConversationId(null);
+    }
+  // loadHistory is stable (useCallback with no deps that change), so this is safe
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
   // ── loadHistory ────────────────────────────────────────────────────────────
   const loadHistory = useCallback(async () => {
+    // Guard: never fire an unauthenticated request.
+    // HistorySidebar calls this on mount (even before auth state is known),
+    // so we read the token directly from localStorage as the source of truth.
+    // If no token is present, the request would 401 and incorrectly dispatch
+    // auth:unauthorized, which would clear a concurrently-restoring valid session.
+    if (!localStorage.getItem('agri_token')) return;
+
     setHistoryLoading(true);
     try {
       const res = await fetchHistory(1, 30);

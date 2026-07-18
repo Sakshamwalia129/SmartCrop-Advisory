@@ -19,6 +19,13 @@ const responseSchema = new mongoose.Schema(
 
 const conversationSchema = new mongoose.Schema(
   {
+    // Link every conversation to a user
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
     query: {
       type: String,
       required: true,
@@ -57,7 +64,7 @@ const conversationSchema = new mongoose.Schema(
   }
 );
 
-// Index for fetching recent conversations efficiently
-conversationSchema.index({ createdAt: -1 });
+// Compound index for fetching a user's recent conversations efficiently
+conversationSchema.index({ userId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Conversation', conversationSchema);

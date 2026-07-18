@@ -1,6 +1,9 @@
 'use strict';
 
-require('dotenv').config();
+const path = require('path');
+// Always load .env from the project root, regardless of which directory
+// the server process was launched from (e.g. `cd src && npm run dev`).
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const app = require('./app');
 const { connectDB } = require('./config/database');

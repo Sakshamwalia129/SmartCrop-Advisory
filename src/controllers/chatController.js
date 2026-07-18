@@ -8,6 +8,7 @@ const { saveConversation, getHistory, renameConversation, deleteConversation } =
 // POST /api/chat
 const sendMessage = asyncHandler(async (req, res) => {
   const { query, cropType, language = 'en' } = req.body;
+  const userId = req.user.id;
 
   // 1. Get advisory from Groq + generate title in parallel (title failure is non-fatal)
   const [advisoryResult, titleResult] = await Promise.allSettled([
@@ -20,8 +21,8 @@ const sendMessage = asyncHandler(async (req, res) => {
   const advisory = advisoryResult.value;
   const title = titleResult.status === 'fulfilled' ? titleResult.value : null;
 
-  // 2. Save to MongoDB (title is null if generation failed — backward compatible)
-  const saved = await saveConversation({ query, cropType: cropType || null, advisory, language, title });
+  // 2. Save to MongoDB (linked to the authenticated user)
+  const saved = await saveConversation({ userId, query, cropType: cropType || null, advisory, language, title });
 
   // 3. Return response
   const { isWithinDomain, ...responseData } = advisory;
@@ -37,9 +38,10 @@ const sendMessage = asyncHandler(async (req, res) => {
 // GET /api/chat/history
 const getConversationHistory = asyncHandler(async (req, res) => {
   const { page, limit } = req.query;
+  const userId = req.user.id;
 
   const { conversations, total, page: currentPage, limit: currentLimit } =
-    await getHistory(Number(page), Number(limit));
+    await getHistory(userId, Number(page), Number(limit));
 
   return res.status(200).json(formatList(conversations, total, currentPage, currentLimit));
 });
@@ -48,6 +50,7 @@ const getConversationHistory = asyncHandler(async (req, res) => {
 const patchConversationTitle = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
+  const userId = req.user.id;
 
   if (!title || typeof title !== 'string' || title.trim().length === 0) {
     return res.status(400).json(formatError('VALIDATION_ERROR', 'title cannot be empty'));
@@ -56,14 +59,15 @@ const patchConversationTitle = asyncHandler(async (req, res) => {
     return res.status(400).json(formatError('VALIDATION_ERROR', 'title cannot exceed 60 characters'));
   }
 
-  const updated = await renameConversation(id, title.trim());
+  const updated = await renameConversation(userId, id, title.trim());
   return res.status(200).json(formatSuccess({ _id: updated._id, title: updated.title }));
 });
 
 // DELETE /api/chat/:id
 const removeConversation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  await deleteConversation(id);
+  const userId = req.user.id;
+  await deleteConversation(userId, id);
   return res.status(200).json(formatSuccess({ _id: id }));
 });
 

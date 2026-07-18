@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useChat } from '../hooks/useChat.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import Header from '../components/Header.jsx';
 import DisclaimerBanner from '../components/DisclaimerBanner.jsx';
 import ChatWindow from '../components/ChatWindow.jsx';
@@ -8,6 +9,8 @@ import HistorySidebar from '../components/HistorySidebar.jsx';
 import { useToast, ToastContainer } from '../components/Toast.jsx';
 
 export default function ChatPage() {
+  const { isAuthenticated, user, logout } = useAuth();
+
   const {
     messages,
     isLoading,
@@ -20,7 +23,7 @@ export default function ChatPage() {
     clearChat,
     renameConversation,
     deleteConversation,
-  } = useChat();
+  } = useChat(isAuthenticated);
 
   const { toasts, showToast, dismiss } = useToast();
 
@@ -30,16 +33,17 @@ export default function ChatPage() {
   const [language, setLanguage] = useState('en');
 
   const handleSend = useCallback(() => {
-    if (!query.trim() || isLoading) return;
+    if (!query.trim() || isLoading || !isAuthenticated) return;
     sendMessage(query, cropType, language);
     setQuery('');
-  }, [query, cropType, language, isLoading, sendMessage]);
+  }, [query, cropType, language, isLoading, isAuthenticated, sendMessage]);
 
   // Called when user clicks an example in empty state — sends immediately
   const handleSelectExample = useCallback((exampleText, exampleCrop) => {
+    if (!isAuthenticated) return;
     if (exampleCrop) setCropType(exampleCrop);
     sendMessage(exampleText, exampleCrop || cropType, language);
-  }, [sendMessage, cropType, language]);
+  }, [sendMessage, cropType, language, isAuthenticated]);
 
   // Called when user clicks a history item in the sidebar
   const handleSelectHistoryItem = useCallback((item) => {
@@ -89,6 +93,8 @@ export default function ChatPage() {
           sidebarOpen={sidebarOpen}
           serverOnline={serverOnline}
           onClearChat={clearChat}
+          user={user}
+          onLogout={logout}
         />
 
         {/* Disclaimer */}
@@ -102,7 +108,7 @@ export default function ChatPage() {
           language={language}
         />
 
-        {/* Input area */}
+        {/* Input area — disabled when not authenticated (modal is showing) */}
         <QueryInput
           value={query}
           onChange={setQuery}
@@ -111,7 +117,7 @@ export default function ChatPage() {
           language={language}
           onLanguageChange={setLanguage}
           onSend={handleSend}
-          isLoading={isLoading}
+          isLoading={isLoading || !isAuthenticated}
         />
       </div>
 

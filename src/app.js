@@ -9,18 +9,39 @@ const routes = require('./routes/index');
 const errorHandler = require('./middleware/errorHandler');
 const { globalLimiter } = require('./middleware/rateLimiter');
 const AppError = require('./utils/AppError');
+const passport = require('./config/passport');
 
 const app = express();
 
+const isDevMode = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+
 // Security headers
-app.use(helmet());
+// Relax CSP in development to allow OAuth provider redirects.
+// In production, tighten this based on your deployment domain.
+app.use(
+  helmet({
+    contentSecurityPolicy: isDevMode
+      ? false  // Disable CSP entirely in dev — simplest for OAuth flows
+      : {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc:  ["'self'"],
+            styleSrc:   ["'self'", "'unsafe-inline'"],
+            imgSrc:     ["'self'", 'data:', 'https:'],
+            connectSrc: ["'self'"],
+            formAction: ["'self'", 'https://accounts.google.com', 'https://github.com'],
+            frameAncestors: ["'none'"],
+          },
+        },
+    // Allow the OAuth redirect response header
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // CORS
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000')
   .split(',')
   .map((o) => o.trim());
-
-const isDevMode = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
 
 app.use(
   cors({
@@ -32,8 +53,8 @@ app.use(
         callback(new Error('Not allowed by CORS'));
       }
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
@@ -46,6 +67,9 @@ app.use(express.urlencoded({ extended: false }));
 
 // Global rate limiter
 app.use(globalLimiter);
+
+// Passport (stateless — no session required)
+app.use(passport.initialize());
 
 // API routes
 app.use('/api', routes);

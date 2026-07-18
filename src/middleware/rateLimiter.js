@@ -8,18 +8,27 @@ const handler = (_req, res) =>
 
 const globalLimiter = rateLimit({
   windowMs: 60000,
-  max: 100,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
   handler,
-});
+})
 
 const chatLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
-  max: parseInt(process.env.RATE_LIMIT_MAX_CHAT || '10', 10),
+  max: parseInt(process.env.RATE_LIMIT_MAX_CHAT || '100', 10),
   standardHeaders: true,
   legacyHeaders: false,
   handler,
 });
 
-module.exports = { globalLimiter, chatLimiter };
+// Strict limiter for auth endpoints: 5 attempts per 15 minutes
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_AUTH || '5', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler,
+});
+
+module.exports = { globalLimiter, chatLimiter, authLimiter };

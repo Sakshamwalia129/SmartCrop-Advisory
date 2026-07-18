@@ -32,6 +32,7 @@ export function useToast() {
 // ── Individual toast item ────────────────────────────────────────────────────
 function ToastItem({ toast, onDismiss }) {
   const isSuccess = toast.type === 'success';
+  const isInfo = toast.type === 'info';
 
   return (
     <div
@@ -43,12 +44,14 @@ function ToastItem({ toast, onDismiss }) {
         'min-w-[260px] max-w-[360px]',
         isSuccess
           ? 'bg-forest-800 border border-forest-600 text-white'
+          : isInfo
+          ? 'bg-blue-800/90 border border-blue-500/50 text-blue-100'
           : 'bg-red-900/90 border border-red-500/50 text-red-100',
       ].join(' ')}
     >
       {/* Icon */}
       <span className="flex-shrink-0 mt-0.5 text-base leading-none">
-        {isSuccess ? '✅' : '❌'}
+        {isSuccess ? '✅' : isInfo ? 'ℹ️' : '❌'}
       </span>
 
       {/* Message */}

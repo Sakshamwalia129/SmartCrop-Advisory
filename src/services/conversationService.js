@@ -3,9 +3,10 @@
 const Conversation = require('../models/Conversation');
 const AppError = require('../utils/AppError');
 
-const saveConversation = async ({ query, cropType, advisory, language = 'en', title = null }) => {
+const saveConversation = async ({ userId, query, cropType, advisory, language = 'en', title = null }) => {
   try {
     const doc = await Conversation.create({
+      userId,
       query,
       title,
       cropType: cropType || null,
@@ -26,15 +27,16 @@ const saveConversation = async ({ query, cropType, advisory, language = 'en', ti
   }
 };
 
-const getHistory = async (page = 1, limit = 20) => {
+const getHistory = async (userId, page = 1, limit = 20) => {
   const safeLimit = Math.min(Math.max(1, limit), 100);
   const safePage = Math.max(1, page);
   const skip = (safePage - 1) * safeLimit;
 
   try {
+    const filter = { userId };
     const [total, conversations] = await Promise.all([
-      Conversation.countDocuments(),
-      Conversation.find()
+      Conversation.countDocuments(filter),
+      Conversation.find(filter)
         .select('query title cropType response isWithinDomain language createdAt')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -49,10 +51,10 @@ const getHistory = async (page = 1, limit = 20) => {
   }
 };
 
-const renameConversation = async (id, title) => {
+const renameConversation = async (userId, id, title) => {
   try {
-    const doc = await Conversation.findByIdAndUpdate(
-      id,
+    const doc = await Conversation.findOneAndUpdate(
+      { _id: id, userId },               // ownership check
       { title: title.trim() },
       { new: true, runValidators: true }
     );
@@ -65,9 +67,9 @@ const renameConversation = async (id, title) => {
   }
 };
 
-const deleteConversation = async (id) => {
+const deleteConversation = async (userId, id) => {
   try {
-    const doc = await Conversation.findByIdAndDelete(id);
+    const doc = await Conversation.findOneAndDelete({ _id: id, userId }); // ownership check
     if (!doc) throw new AppError('Conversation not found.', 404, 'NOT_FOUND');
     return doc;
   } catch (err) {
